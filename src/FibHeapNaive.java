@@ -17,7 +17,7 @@ public class FibHeapNaive {
 
     private Node min;		// ptr to min node (in root)
     private int n;		// total # nodes in heap
-    private int steps;		// count of steps for extractMin
+    private long steps;		// count of steps for extractMin
 
     /**
      * Helper class to build heap-ordered tree
@@ -179,7 +179,7 @@ public class FibHeapNaive {
 
 	int maxDegree = (int) Math.floor(Math.log10(n) / Math.log10((1 + Math.sqrt(5)) / 2));
 
-	maxDegree = n;
+	maxDegree = 45;
 	//	System.out.println("maxdeg=" + maxDegree);
 	//	System.out.println("n=" + n);
 	Node[] tableDegrees = new Node[maxDegree + 1];	// array of tree degree used for iteration below
@@ -523,7 +523,7 @@ public class FibHeapNaive {
 	//String fout = "test.csv";
 
 	//File fname = new File("proper-random.csv");
-	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("fh/" + fout);
+	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("code/ds/FibHeap/src/" + fout);
 	try (BufferedWriter out = Files.newBufferedWriter(pathOut, StandardOpenOption.WRITE,
 		StandardOpenOption.CREATE)) {
 	    //	try (BufferedWriter out = new BufferedWriter(new FileWriter(fout))) {
@@ -585,7 +585,7 @@ public class FibHeapNaive {
 			    }
 			}
 		    }
-		    int totalSteps = heap.steps;
+		    long totalSteps = heap.steps;
 		    double aveSteps = (double) totalSteps / extractMinCount;
 		    System.out.println("total steps " + totalSteps);
 		    System.out.println("Average steps for extractMin for " + n + ": " + aveSteps);
