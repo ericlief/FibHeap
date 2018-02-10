@@ -13,11 +13,11 @@ import java.util.Scanner;
  * @author liefe
  *
  */
-public class FibHeapNaive {
+public class FibHeap {
 
     private Node min;		// ptr to min node (in root)
     private int n;		// total # nodes in heap
-    private long steps;		// count of steps for extractMin
+    private int steps;		// count of steps for extractMin
 
     /**
      * Helper class to build heap-ordered tree
@@ -28,6 +28,7 @@ public class FibHeapNaive {
     private class Node {
 	int key;		// key of node (int or generic here)
 	int degree = 0;		// degree of node
+	boolean mark = false;	// indicates whether a child has been deleted
 	Node parent; 		// ptr to parent of node (necessary?)
 	Node child;		// ptr to any child
 	Node prev, next;	// siblings
@@ -178,10 +179,7 @@ public class FibHeapNaive {
     public void consolidate() {
 
 	int maxDegree = (int) Math.floor(Math.log10(n) / Math.log10((1 + Math.sqrt(5)) / 2));
-
-	maxDegree = n;
-	//	System.out.println("maxdeg=" + maxDegree);
-	//	System.out.println("n=" + n);
+	// System.out.println("maxdeg=" + maxDegree);
 	Node[] tableDegrees = new Node[maxDegree + 1];	// array of tree degree used for iteration below
 	Node cur;		// ptr to current pos
 	Node next = min;	// ptr to next pos
@@ -195,7 +193,7 @@ public class FibHeapNaive {
 
 	} while (cur != min);
 
-	//	System.out.println("Number of roots = " + nRoots);
+	// System.out.println("Number of roots = " + nRoots);
 	if (nRoots == 1)
 	    return;
 
@@ -210,7 +208,7 @@ public class FibHeapNaive {
 
 	    // Iterate through the array of degree until reaching the end of heap
 	    int d = cur.degree;
-	    //	    System.out.println(d);
+	    // System.out.println(d);
 	    while (tableDegrees[d] != null) {
 		//		System.out.println("other " + tableDegrees[d].key);
 		//		System.out.println("degree=" + d);
@@ -219,9 +217,9 @@ public class FibHeapNaive {
 		// If cur key is larger swap trees 
 		if (cur.key <= tableDegrees[d].key) {
 		    cur = link(cur, tableDegrees[d]);
-		    //		    System.out.println("linked other below cur" + tableDegrees[d].key + ", cur=" + cur.key);
+		    // System.out.println("linked other below cur" + tableDegrees[d].key + ", cur=" + cur.key);
 		} else {
-		    //		    System.out.println("swapped other w current, other=" + tableDegrees[d].key + ", cur=" + cur.key);
+		    // System.out.println("swapped other w current, other=" + tableDegrees[d].key + ", cur=" + cur.key);
 		    cur = link(tableDegrees[d], cur);	// link trees with other as child of cur
 		}
 
@@ -244,7 +242,6 @@ public class FibHeapNaive {
 		min = cur;
 	    }
 	}
-	//	System.out.println("done consolidating");
 	//	printRoots(min);
     }
 
@@ -307,57 +304,6 @@ public class FibHeapNaive {
     }
 
     /**
-     * Decrease a nodes key and maintain heap property.
-     * 
-     * @param child
-     * @param key
-     */
-    public void decreaseKey(Node child, int key) {
-	if (key > child.key) {
-	    System.out.println("Key must be less than current value");
-	    return;
-	}
-
-	child.key = key;		// decrease current key
-
-	Node parent = child.parent;	// current parent
-	//	System.out.println("old min = " + min.key);
-
-	// If parent then remove child from list of children of parent
-	if (parent != null && key < parent.key) {
-	    //	    System.out.println("roots before cutting child " + child.key + " from parent " + parent.key);
-	    //	    printRoots(parent.child);
-
-	    // Cut child from child list and insert in root list
-
-	    cut(child, parent);
-
-	    //	    System.out.println("lost child node");
-	    //	    printRoots(parent.child);
-	    //	    System.out.println("child root list");
-	    //	    printRoots(child.child);
-	    //	    System.out.println("new root list");
-	    //	    printRoots(min);
-
-	    //	    System.out.println("new root list");
-	    //	    printRoots(min);
-	}
-
-	// Update min if necessary
-	if (child.key < min.key) {
-
-	    //	    System.out.println("old min" + min.key);
-	    //	    printRoots(min);
-
-	    min = child;
-	    //	    System.out.println("new min from dec child" + child.key);
-	    //	    System.out.println("old parent key " + parent);
-	    //	    if (parent != null)
-	    //		System.out.println(parent.key);
-	}
-    }
-
-    /**
      * Remove a node from a doubly linked (child) list and add to root list.
      * Return the modified list/head pointer.
      * 
@@ -388,6 +334,39 @@ public class FibHeapNaive {
 	//	printRoots(min);
 
 	child.parent = null;	// remove parent
+	child.mark = false;	// remove any mark
+    }
+
+    /**
+     * The recursive method from Cormen. Here implemented iteratively upto the
+     * root list.
+     * 
+     * @param child
+     */
+    private void cascadingCut(Node child) {
+	Node parent = child.parent;
+
+	while (parent != null) {
+
+	    //	    System.out.println("parent=" + parent.key + " of " + child.key);
+
+	    // Mark and do nothing else
+	    if (child.mark == false) {
+		child.mark = true;
+		break;
+	    }
+
+	    // Else cut and cascade if possible
+	    //	    System.out.println("cascading");
+
+	    cut(child, parent);		// cut and add to root list
+	    child.parent = null;	// remove parent pointer
+	    child.mark = false;		// remove any mark
+
+	    // Repeat until reaching root list level
+	    child = parent;
+	    parent = child.parent;
+	}
     }
 
     /**
@@ -448,62 +427,63 @@ public class FibHeapNaive {
 
 	// Update counts
 	tree1.degree++;
+	tree2.mark = false;	// update mark 
 
 	return tree1;
     }
 
-    //    /**
-    //     * Decrease a nodes key and maintain heap property.
-    //     * 
-    //     * @param child
-    //     * @param key
-    //     */
-    //    public void decreaseKey(Node child, int key) {
-    //	if (key > child.key) {
-    //	    System.out.println("Key must be less than current value");
-    //	    return;
-    //	}
-    //
-    //	child.key = key;		// decrease current key
-    //
-    //	Node parent = child.parent;	// current parent
-    //	//System.out.println("old min = " + min.key);
-    //
-    //	// If parent then remove child from list of children of parent
-    //	if (parent != null && key < parent.key) {
-    //	    //	    System.out.println("roots before cutting child " + child.key + " from parent " + parent.key);
-    //	    //	    printRoots(parent.child);
-    //
-    //	    // Cut child from child list and insert in root list
-    //
-    //	    cut(child, parent);
-    //
-    //	    //	    System.out.println("lost child node");
-    //	    //	    printRoots(parent.child);
-    //	    //	    System.out.println("child root list");
-    //	    //	    printRoots(child.child);
-    //	    //	    System.out.println("new root list");
-    //	    //	    printRoots(min);
-    //
-    //	    // Cascade from parent up to root if necessary to maintain FibHeap property
-    //	    cascadingCut(parent);
-    //	    //	    System.out.println("new root list");
-    //	    //	    printRoots(min);
-    //	}
-    //
-    //	// Update min if necessary
-    //	if (child.key < min.key) {
-    //
-    //	    //	    System.out.println("old min" + min.key);
-    //	    //	    printRoots(min);
-    //
-    //	    min = child;
-    //	    //	    System.out.println("new min from dec child" + child.key);
-    //	    //	    System.out.println("old parent key " + parent);
-    //	    //	    if (parent != null)
-    //	    //		System.out.println(parent.key);
-    //	}
-    //    }
+    /**
+     * Decrease a nodes key and maintain heap property.
+     * 
+     * @param child
+     * @param key
+     */
+    public void decreaseKey(Node child, int key) {
+	if (key > child.key) {
+	    System.out.println("Key must be less than current value");
+	    return;
+	}
+
+	child.key = key;		// decrease current key
+
+	Node parent = child.parent;	// current parent
+	//System.out.println("old min = " + min.key);
+
+	// If parent then remove child from list of children of parent
+	if (parent != null && key < parent.key) {
+	    //	    System.out.println("roots before cutting child " + child.key + " from parent " + parent.key);
+	    //	    printRoots(parent.child);
+
+	    // Cut child from child list and insert in root list
+
+	    cut(child, parent);
+
+	    //	    System.out.println("lost child node");
+	    //	    printRoots(parent.child);
+	    //	    System.out.println("child root list");
+	    //	    printRoots(child.child);
+	    //	    System.out.println("new root list");
+	    //	    printRoots(min);
+
+	    // Cascade from parent up to root if necessary to maintain FibHeap property
+	    cascadingCut(parent);
+	    //	    System.out.println("new root list");
+	    //	    printRoots(min);
+	}
+
+	// Update min if necessary
+	if (child.key < min.key) {
+
+	    //	    System.out.println("old min" + min.key);
+	    //	    printRoots(min);
+
+	    min = child;
+	    //	    System.out.println("new min from dec child" + child.key);
+	    //	    System.out.println("old parent key " + parent);
+	    //	    if (parent != null)
+	    //		System.out.println(parent.key);
+	}
+    }
 
     public boolean isEmpty() {
 	return n == 0;
@@ -516,31 +496,31 @@ public class FibHeapNaive {
 	Scanner sc = new Scanner(System.in);
 	//Scanner sc = new Scanner(in);
 
-	FibHeapNaive heap = null;
-	//final long startTime = System.currentTimeMillis();
+	FibHeap heap = null;
+	final long startTime = System.currentTimeMillis();
 	int n = 0;
-	String fout = "naive-special.csv";
+	String fout = "proper-special.csv";
 	//String fout = "test.csv";
 
 	//File fname = new File("proper-random.csv");
-	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("code/ds/FibHeap/output/" + fout);
+	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("fh/" + fout);
 	try (BufferedWriter out = Files.newBufferedWriter(pathOut, StandardOpenOption.WRITE,
 		StandardOpenOption.CREATE)) {
 	    //	try (BufferedWriter out = new BufferedWriter(new FileWriter(fout))) {
 	    System.out.println();
 	    //	    String[] tableID;
-	    FibHeapNaive.Node[] tableID;
+	    FibHeap.Node[] tableID;
 	    int extractMinCount;
 	    while (sc.hasNext()) {
 		if (sc.hasNext("#")) {
 		    sc.next();
-		    heap = new FibHeapNaive();
+		    heap = new FibHeap();
 		    extractMinCount = 0;
 		    if (sc.hasNextInt())
 			n = sc.nextInt();	// number of elements to be inserted
 
 		    System.out.println("Building an ID table of size " + n);
-		    tableID = new FibHeapNaive.Node[n];
+		    tableID = new FibHeap.Node[n];
 		    sc.nextLine();
 
 		    while (sc.hasNext("INS") || sc.hasNext("DEL") || sc.hasNext("DEC")) {
@@ -550,12 +530,10 @@ public class FibHeapNaive {
 				int id = sc.nextInt();
 				if (sc.hasNextInt()) {
 				    int key = sc.nextInt();
-				    if (tableID[id] == null) {
-					FibHeapNaive.Node x = heap.new Node();
-					tableID[id] = x;	// store id in table
-					heap.insert(x, key, id);
-					//					System.out.println("suck it - inserted " + key + "id=" + id);
-				    }
+				    FibHeap.Node x = heap.new Node();
+				    tableID[id] = x;	// store id in table
+				    heap.insert(x, key, id);
+				    // System.out.println("inserted " + key + "id=" + id);
 				}
 			    }
 			} else if (sc.hasNext("DEL")) {		// extract min
@@ -573,29 +551,29 @@ public class FibHeapNaive {
 				int id = sc.nextInt();
 				if (sc.hasNextInt()) {
 				    int key = sc.nextInt();
-				    FibHeapNaive.Node x = tableID[id];
+				    FibHeap.Node x = tableID[id];
 
 				    if (x != null) {
-					//					System.out.println("decrementing key " + x.key + "/id=" + id + "-->" + key);
+					// System.out.println("decrementing key " + x.key + "/id=" + id + "-->" + key);
 
 					heap.decreaseKey(x, key);
-					//					System.out.println("new key " + tableID[id].key);
+					// System.out.println("new key " + tableID[id].key);
 				    }
 				}
 			    }
 			}
 		    }
-		    long totalSteps = heap.steps;
+		    int totalSteps = heap.steps;
 		    double aveSteps = (double) totalSteps / extractMinCount;
 		    System.out.println("total steps " + totalSteps);
 		    System.out.println("Average steps for extractMin for " + n + ": " + aveSteps);
 		    out.write(n + "," + aveSteps + "\n");
-		    //		    final long time = System.currentTimeMillis() - startTime;
-		    //		    System.out.println("Time: " + time);
+		    final long time = System.currentTimeMillis() - startTime;
+		    System.out.println("Time: " + time);
 		}
 	    }
-	    //	    final long time = System.currentTimeMillis() - startTime;
-	    //	    System.out.println("Total time: " + time);
+	    final long time = System.currentTimeMillis() - startTime;
+	    System.out.println("Total time: " + time);
 	    out.close();
 	} catch (IOException e) {
 	    System.err.println("Error writing output");
@@ -604,86 +582,3 @@ public class FibHeapNaive {
 	}
     }
 }
-
-//	
-//	
-////	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("fh/" + fout);
-//	try (BufferedWriter out = Files.newBufferedWriter(pathOut, StandardOpenOption.WRITE,
-//		StandardOpenOption.CREATE)) {
-//	    //	try (BufferedWriter out = new BufferedWriter(new FileWriter(fout))) {
-//	    System.out.println();
-//	    //	    String[] tableID;
-//	    FibHeapNaive.Node[] tableID;
-//	    int extractMinCount;
-//	    while (sc.hasNext()) {
-//		if (sc.hasNext("#")) {
-//		    sc.next();
-//		    heap = new FibHeapNaive();
-//		    extractMinCount = 0;
-//		    if (sc.hasNextInt())
-//			n = sc.nextInt();	// number of elements to be inserted
-//
-//		    System.out.println("Building an ID table of size " + n);
-//		    tableID = new FibHeapNaive.Node[n];
-//		    sc.nextLine();
-//
-//		    while (sc.hasNext("INS") || sc.hasNext("DEL") || sc.hasNext("DEC")) {
-//			if (sc.hasNext("INS")) {
-//			    sc.next();
-//			    if (sc.hasNextInt()) {
-//				int id = sc.nextInt();
-//				if (sc.hasNextInt()) {
-//				    int key = sc.nextInt();
-//				    FibHeapNaive.Node x = heap.new Node();
-//				    tableID[id] = x;	// store id in table
-//				    heap.insert(x, key, id);
-//				    // System.out.println("inserted " + key + "id=" + id);
-//				}
-//			    }
-//			} else if (sc.hasNext("DEL")) {		// extract min
-//			    sc.next();
-//			    Node min = heap.min; // current min
-//			    //			    System.out.println("deleting old min " + min.key + " id=" + min.id);
-//			    tableID[min.id] = null;
-//			    heap.extractMin();
-//			    //			    System.out.println("new min" + heap.min.key);
-//			    //			    System.out.println("deleted min " + tableID[min.id]);
-//			    extractMinCount++;
-//			} else if (sc.hasNext("DEC")) {		// dec
-//			    sc.next();
-//			    if (sc.hasNextInt()) {
-//				int id = sc.nextInt();
-//				if (sc.hasNextInt()) {
-//				    int key = sc.nextInt();
-//				    FibHeapNaive.Node x = tableID[id];
-//
-//				    if (x != null) {
-//					// System.out.println("decrementing key " + x.key + "/id=" + id + "-->" + key);
-//
-//					heap.decreaseKey(x, key);
-//					// System.out.println("new key " + tableID[id].key);
-//				    }
-//				}
-//			    }
-//			}
-//
-//		    }
-//		    int totalSteps = heap.steps;
-//		    double aveSteps = (double) totalSteps / extractMinCount;
-//		    System.out.println("total steps " + totalSteps);
-//		    System.out.println("Average steps for extractMin for " + n + ": " + aveSteps);
-//		    out.write(n + "," + aveSteps + "\n");
-//		    //final long time = System.currentTimeMillis() - startTime;
-//		    //System.out.println("Time: " + time);
-//		}
-//	    }
-//	    //final long time = System.currentTimeMillis() - startTime;
-//	    //System.out.println("Total time: " + time);
-//	    out.close();
-//	} catch (IOException e) {
-//	    System.err.println("Error writing output");
-//	    e.printStackTrace();
-//	    sc.close();
-//	}
-//    }
-//}

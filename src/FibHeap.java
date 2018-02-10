@@ -492,18 +492,18 @@ public class FibHeap {
     public static void main(String[] args) throws IOException {
 
 	//File in = new File("~/fh/test.txt");
-	Path in = Paths.get(System.getProperty("user.home")).resolve("fh/test.txt");
+	//Path in = Paths.get(System.getProperty("user.home")).resolve("fh/test.txt");
 	Scanner sc = new Scanner(System.in);
 	//Scanner sc = new Scanner(in);
 
 	FibHeap heap = null;
-	final long startTime = System.currentTimeMillis();
+	// final long startTime = System.currentTimeMillis();
 	int n = 0;
-	String fout = "proper-special.csv";
+	String fout = "proper-normal.csv";
 	//String fout = "test.csv";
 
 	//File fname = new File("proper-random.csv");
-	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("fh/" + fout);
+	Path pathOut = Paths.get(System.getProperty("user.home")).resolve("code/ds/FibHeap/output/" + fout);
 	try (BufferedWriter out = Files.newBufferedWriter(pathOut, StandardOpenOption.WRITE,
 		StandardOpenOption.CREATE)) {
 	    //	try (BufferedWriter out = new BufferedWriter(new FileWriter(fout))) {
@@ -568,12 +568,12 @@ public class FibHeap {
 		    System.out.println("total steps " + totalSteps);
 		    System.out.println("Average steps for extractMin for " + n + ": " + aveSteps);
 		    out.write(n + "," + aveSteps + "\n");
-		    final long time = System.currentTimeMillis() - startTime;
-		    System.out.println("Time: " + time);
+		    //final long time = System.currentTimeMillis() - startTime;
+		    //System.out.println("Time: " + time);
 		}
 	    }
-	    final long time = System.currentTimeMillis() - startTime;
-	    System.out.println("Total time: " + time);
+	    //final long time = System.currentTimeMillis() - startTime;
+	    //System.out.println("Total time: " + time);
 	    out.close();
 	} catch (IOException e) {
 	    System.err.println("Error writing output");
